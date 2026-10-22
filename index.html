@@ -57,9 +57,6 @@ button{font:inherit;color:inherit}
 .seg button{border:0;background:none;padding:8px 16px;cursor:pointer;min-height:42px}
 .seg button+button{border-left:2px solid var(--line)}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{border:2px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;cursor:pointer;min-height:42px}
-.chip[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--bg)}
 
 /* 본문 레이아웃 */
 .layout{display:grid;grid-template-columns:1fr;gap:28px;padding:8px 0 56px}
@@ -75,7 +72,6 @@ button{font:inherit;color:inherit}
 .row .w{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 10px}
 .row .word{font-family:var(--serif);font-weight:600;font-size:18px;line-height:1.4}
 .row .hanja{font-family:var(--serif);color:var(--c);font-size:16px}
-.row .lv{margin-left:auto;font-size:13px;color:var(--muted)}
 .row .mean{margin:0;color:var(--muted);font-size:15px;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .more{display:block;margin:14px auto 0;padding:10px 22px;border:2px solid var(--line);background:var(--surface);border-radius:999px;cursor:pointer}
 .empty{padding:28px 4px;color:var(--muted)}
@@ -110,7 +106,6 @@ button{font:inherit;color:inherit}
 .dhead{margin:20px 0 0}
 .meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:14px}
 .badge{display:inline-block;background:var(--cs);color:var(--c);font-weight:700;border-radius:999px;padding:2px 12px;font-size:15px}
-.lvtag{color:var(--muted);font-size:15px}
 .dtitle{font-family:var(--serif);font-weight:800;font-size:clamp(26px,6vw,34px);line-height:1.4;margin:0;letter-spacing:-.01em}
 .dtitle:focus{outline:none}
 .sec{margin-top:26px}
@@ -160,13 +155,6 @@ button{font:inherit;color:inherit}
         <button type="button" data-v="사자성어" aria-pressed="false">사자성어</button>
         <button type="button" data-v="속담" aria-pressed="false">속담</button>
       </div>
-      <div class="chips" role="group" aria-label="학년" id="chipLevel">
-        <button class="chip" type="button" data-v="all" aria-pressed="true">모든 학년</button>
-        <button class="chip" type="button" data-v="초저" aria-pressed="false">초등 저</button>
-        <button class="chip" type="button" data-v="초고" aria-pressed="false">초등 고</button>
-        <button class="chip" type="button" data-v="중" aria-pressed="false">중학</button>
-        <button class="chip" type="button" data-v="고" aria-pressed="false">고등</button>
-      </div>
     </div>
   </header>
 
@@ -186,7 +174,6 @@ button{font:inherit;color:inherit}
 
 <script>
 "use strict";
-const LEVEL_LABEL = {"초저":"초등 저","초고":"초등 고","중":"중학","고":"고등"};
 const PAGE = 60;
 const CHO = [..."ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ"];
 const isCho = c => CHO.includes(c);
@@ -196,7 +183,7 @@ const norm = s => String(s).replace(/\s+/g, "").toLowerCase();
 const tcls = it => it.type === "사자성어" ? "t-sa" : "t-sok";
 
 let DATA = [], BY_ID = {};
-const state = { q: "", type: "all", level: "all", limit: PAGE };
+const state = { q: "", type: "all", limit: PAGE };
 const $ = id => document.getElementById(id);
 
 /* 검색: 표제어는 초성/글자 혼합 패턴 매칭 */
@@ -226,8 +213,7 @@ function score(it, q) {
 function filtered() {
   const q = norm(state.q);
   let out = DATA.filter(it =>
-    (state.type === "all" || it.type === state.type) &&
-    (state.level === "all" || it.level === state.level));
+    (state.type === "all" || it.type === state.type));
   if (!q) return out;
   return out
     .map((it, i) => [it, score(it, q), i])
@@ -264,7 +250,7 @@ function hanjaCells(it, large) {
 function rowHTML(it) {
   const hj = it.hanja ? `<span class="hanja">${esc(it.hanja)}</span>` : "";
   return `<li><a class="row ${tcls(it)}" href="#${it.id}" data-id="${it.id}">
-    <span class="in"><span class="w"><span class="word">${esc(it.word)}</span>${hj}<span class="lv">${esc(LEVEL_LABEL[it.level] || "")}</span></span>
+    <span class="in"><span class="w"><span class="word">${esc(it.word)}</span>${hj}</span>
     <p class="mean">${esc(it.meaning)}</p></span></a></li>`;
 }
 function relBlock(title, sub, list) {
@@ -281,7 +267,7 @@ function renderList() {
   $("count").textContent = list.length ? `${list.length}개` : "";
   $("msg").innerHTML = list.length ? "" :
     `<p class="empty">‘${esc(state.q)}’에 맞는 말이 없어요. 초성(예: ㅇㅅㅇㅈ)이나 한자로도 찾아보세요.</p>`;
-  const home = !norm(state.q) && state.type === "all" && state.level === "all";
+  const home = !norm(state.q) && state.type === "all";
   $("today").innerHTML = home ? todayHTML() : "";
   markActive();
 }
@@ -308,7 +294,7 @@ function renderDetail(it) {
   box.innerHTML = `<div class="dwrap">
     <button class="back" type="button" id="back">← 목록</button>
     <div class="dhead">
-      <div class="meta"><span class="badge">${esc(it.type)}</span><span class="lvtag">${esc(LEVEL_LABEL[it.level] || "")}</span></div>
+      <div class="meta"><span class="badge">${esc(it.type)}</span></div>
       ${head}
     </div>
     <div class="sec"><h3>뜻</h3><p>${esc(it.meaning)}</p></div>
@@ -316,9 +302,9 @@ function renderDetail(it) {
     ${it.origin ? `<div class="sec"><h3>유래</h3><p>${esc(it.origin)}</p></div>` : ""}
     ${it.tags.length ? `<div class="tags">${it.tags.map(t => `<button type="button" class="tag" data-tag="${esc(t)}">#${esc(t)}</button>`).join("")}</div>` : ""}
     ${(r.syn.length || r.ant.length || r.same.length) ? `<div class="rel">
-      ${relBlock("비슷한 표현", "뜻이 가까운 말", r.syn)}
-      ${relBlock("반대되는 표현", "", r.ant)}
-      ${relBlock("같이 보면 좋은 말", "주제가 같은 말", r.same)}
+      ${relBlock("비슷한 말", "", r.syn)}
+      ${relBlock("반대되는 말", "", r.ant)}
+      ${relBlock("관련된 말", "", r.same)}
     </div>` : ""}</div>`;
   box.scrollTop = 0;
   if (matchMedia("(max-width:899px)").matches) {
@@ -330,7 +316,7 @@ function renderDetail(it) {
 function placeholder() {
   const box = $("detail");
   box.className = "detail";
-  box.innerHTML = `<p class="ph">목록에서 말을 고르면 뜻과 한자, 비슷한 표현이 여기에 나와요.</p>`;
+  box.innerHTML = `<p class="ph">목록에서 말을 고르면 뜻과 한자, 비슷한 말이 여기에 나와요.</p>`;
   document.body.classList.remove("lock");
 }
 function markActive() {
@@ -364,18 +350,13 @@ $("segType").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   state.type = b.dataset.v; setPressed($("segType"), state.type); update();
 });
-$("chipLevel").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b) return;
-  state.level = b.dataset.v; setPressed($("chipLevel"), state.level); update();
-});
 $("more").addEventListener("click", () => { state.limit += PAGE; renderList(); });
 $("detail").addEventListener("click", e => {
   if (e.target.closest("#back")) { closeDetail(); return; }
   const t = e.target.closest(".tag");
   if (t) {
     state.q = t.dataset.tag; $("q").value = state.q;
-    state.type = "all"; state.level = "all";
-    setPressed($("segType"), "all"); setPressed($("chipLevel"), "all");
+    state.type = "all"; setPressed($("segType"), "all");
     closeDetail(); update(); window.scrollTo({ top: 0 });
   }
 });
